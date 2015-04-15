@@ -32,11 +32,10 @@ public class App
         
         conf.put(Config.TOPOLOGY_MAX_SPOUT_PENDING, 1);
         
-        //LocalCluster cluster = new LocalCluster();
-        //cluster.submitTopology("Getting-started-topologie", conf, builder.createTopology());
-        //Thread.sleep(1000);
-        //cluster.shutdown();
-        StormSubmitter.submitTopology("Getting-started-topologie", conf, builder.createTopology());
- 
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("Getting-started-topologie", conf, builder.createTopology());
+        Thread.sleep(111111111111111111L);
+        cluster.shutdown();
+        //StormSubmitter.submitTopology("Getting-started-topologie", conf, builder.createTopology());
     }
 }

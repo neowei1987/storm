@@ -62,10 +62,17 @@ public class LogReader implements IRichSpout {
 		}
 	}
 	
+	public LogReader(int port)
+	{
+		this.port = port;
+	}
+	
 	private TopologyContext context;
 	private SpoutOutputCollector collector;
+	private int port;
 	private static BlockingQueue dataQueue = new LinkedBlockingQueue<byte[]>();
 	private static Thread dataRecvThread = null;
+	
 
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
@@ -76,7 +83,7 @@ public class LogReader implements IRichSpout {
 		if (dataRecvThread == null)
 		{
 			try {
-				dataRecvThread = new Thread(new DataRecvJob(8043, dataQueue));
+				dataRecvThread = new Thread(new DataRecvJob(this.port, dataQueue));
 			} catch (SocketException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -113,6 +120,7 @@ public class LogReader implements IRichSpout {
 		
 		String str = new String(data);
 		System.out.println(str);
+		
 		this.collector.emit(new Values(str));
 	}
 
@@ -120,7 +128,7 @@ public class LogReader implements IRichSpout {
 		System.out.println("OK: " + msgId);
 
 	}
-
+	
 	public void fail(Object msgId) {
 		System.out.println("Fail: " + msgId);
 

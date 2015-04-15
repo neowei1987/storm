@@ -22,7 +22,7 @@ public class LogCollect
     public static void main( String[] args ) throws InterruptedException, AlreadyAliveException, InvalidTopologyException
     {
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout("log-reader", new LogReader());
+        builder.setSpout("log-reader", new QasNoticeLogReader(1234));
         builder.setBolt("word-normalizer", new WordNormalizer()).shuffleGrouping("log-reader");
         builder.setBolt("word-counter", new WordCounter(), 2).fieldsGrouping("word-normalizer", new Fields("word"));
         
