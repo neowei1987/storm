@@ -18,9 +18,9 @@ import backtype.storm.tuple.Values;
 
 import java.net.*;
 
-public class QasNoticeLogReader extends LogReader {
+public class XspNoticeLogReader extends LogReader {
 
-	public QasNoticeLogReader(int port)
+	public XspNoticeLogReader(int port)
 	{
 		super(port);
 	}

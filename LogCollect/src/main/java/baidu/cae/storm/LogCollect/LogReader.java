@@ -20,59 +20,16 @@ import java.net.*;
 
 public class LogReader implements IRichSpout {
 
-	class DataRecvJob implements  Runnable {
-		DatagramSocket _listen_socket =  null;
-		BlockingQueue _dataQueue = null;
-		
-		public DataRecvJob(int port, BlockingQueue queue) throws SocketException 
-		{
-			_listen_socket = new DatagramSocket(port);
-			_dataQueue = queue;
-		}
-		
-		public void run() 
-		{
-			while (true)
-			{
-				byte[] buffer = new byte[10240];
-				DatagramPacket p = new DatagramPacket(buffer, buffer.length);
-				try 
-				{
-					_listen_socket.receive(p);
-				}
-				catch (IOException e) 
-				{
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-				}
-				
-				System.out.println("RECV: " + p.getLength() + "Bytes");
-				
-				if (p.getLength() >= buffer.length)
-				{
-					continue;
-				}
-				
-				_dataQueue.offer(p.getData());
-			}
-		}
-	}
+	private TopologyContext context;
+	private SpoutOutputCollector collector;
+	private int port;
+	private static BlockingQueue<String> dataQueue = new LinkedBlockingQueue<String>();
+	private static LogReceiveServer _server;
 	
 	public LogReader(int port)
 	{
 		this.port = port;
 	}
-	
-	private TopologyContext context;
-	private SpoutOutputCollector collector;
-	private int port;
-	private static BlockingQueue dataQueue = new LinkedBlockingQueue<byte[]>();
-	private static Thread dataRecvThread = null;
-	
 
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
@@ -80,15 +37,10 @@ public class LogReader implements IRichSpout {
 		this.context = context;
 		this.collector = collector;
 		
-		if (dataRecvThread == null)
+		if (_server == null)
 		{
-			try {
-				dataRecvThread = new Thread(new DataRecvJob(this.port, dataQueue));
-			} catch (SocketException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			dataRecvThread.start();
+			_server = new LogReceiveServer(this.port, dataQueue);
+			_server.startUp();
 		}
 	}
 
@@ -106,9 +58,9 @@ public class LogReader implements IRichSpout {
 
 	public void nextTuple() {
 		
-		byte[] data = null;
+		String data = null;
 		try {
-			data = (byte[]) dataQueue.poll(1, TimeUnit.SECONDS);
+			data = dataQueue.poll(1, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -118,10 +70,9 @@ public class LogReader implements IRichSpout {
 			return;
 		}
 		
-		String str = new String(data);
-		System.out.println(str);
+		System.out.println(data);
 		
-		this.collector.emit(new Values(str));
+		this.collector.emit(new Values(data));
 	}
 
 	public void ack(Object msgId) {
@@ -135,7 +86,7 @@ public class LogReader implements IRichSpout {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("line"));
+		declarer.declare(new Fields("log"));
 	}
 
 	public Map<String, Object> getComponentConfiguration() {
