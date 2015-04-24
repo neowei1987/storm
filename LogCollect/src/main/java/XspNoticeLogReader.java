@@ -1,5 +1,3 @@
-package baidu.cae.storm.LogCollect;
-
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;

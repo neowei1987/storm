@@ -1,5 +1,3 @@
-package baidu.cae.storm.LogCollect;
-
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,17 +16,18 @@ import backtype.storm.tuple.Values;
 
 import java.net.*;
 
-public class LogReader implements IRichSpout {
+import org.apache.hadoop.util.Time;
+
+public class HDFSSyncer implements IRichSpout {
 
 	private TopologyContext context;
 	private SpoutOutputCollector collector;
-	private int port;
-	private static BlockingQueue<String> dataQueue = new LinkedBlockingQueue<String>();
-	private static LogReceiveServer _server;
+	private long syncInterval;
+	private long lastSyncTime;
 	
-	public LogReader(int port)
+	public HDFSSyncer(int syncInterval)
 	{
-		this.port = port;
+		this.syncInterval = syncInterval;
 	}
 
 	public void open(Map conf, TopologyContext context,
@@ -36,12 +35,6 @@ public class LogReader implements IRichSpout {
 		
 		this.context = context;
 		this.collector = collector;
-		
-		if (_server == null)
-		{
-			_server = new LogReceiveServer(this.port, dataQueue);
-			_server.startUp();
-		}
 	}
 
 	public void close() {
@@ -58,21 +51,22 @@ public class LogReader implements IRichSpout {
 
 	public void nextTuple() {
 		
-		String data = null;
-		try {
-			data = dataQueue.poll(1, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if (data == null)
+		long curTime = System.currentTimeMillis() / 1000;
+		if (curTime - lastSyncTime >= syncInterval)
 		{
+			lastSyncTime = curTime;
+			this.collector.emit(new Values("sync at: " + lastSyncTime));
 			return;
 		}
-		
-		System.out.println(data);
-		
-		this.collector.emit(new Values(data));
+		else
+		{
+			try {
+				Thread.sleep(syncInterval * 1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public void ack(Object msgId) {
@@ -86,7 +80,7 @@ public class LogReader implements IRichSpout {
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("log"));
+		declarer.declare(new Fields("cmd"));
 	}
 
 	public Map<String, Object> getComponentConfiguration() {

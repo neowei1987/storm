@@ -1,5 +1,3 @@
-package baidu.cae.storm.LogCollect;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Map;
